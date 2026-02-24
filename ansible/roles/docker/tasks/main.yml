@@ -1,0 +1,69 @@
+# ============================================================
+# roles/docker/tasks/main.yml
+# Automates Docker installation and configuration
+# ============================================================
+
+---
+# Step 1: Update apt package cache
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+# Step 2: Install required system dependencies
+- name: Install required system packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - software-properties-common
+    state: present
+
+# Step 3: Add Docker's official GPG key
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+# Step 4: Add Docker repository
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+# Step 5: Install Docker Engine
+- name: Install Docker Engine
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+
+# Step 6: Enable Docker service to start on boot
+- name: Enable Docker service on boot
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+# Step 7: Add ubuntu user to docker group (so docker runs without sudo)
+- name: Add ubuntu user to docker group
+  user:
+    name: ubuntu
+    groups: docker
+    append: yes
+
+# Step 8: Verify Docker is running
+- name: Verify Docker is running
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+# Step 9: Print Docker version
+- name: Print Docker version
+  debug:
+    msg: "Docker installed successfully: {{ docker_version.stdout }}"

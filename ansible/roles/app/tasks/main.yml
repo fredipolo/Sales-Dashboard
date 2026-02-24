@@ -1,0 +1,59 @@
+# ============================================================
+# roles/app/tasks/main.yml
+# Automates Sales Dashboard container deployment
+# ============================================================
+
+---
+# Step 1: Pull the latest Docker image from Docker Hub
+- name: Pull latest Sales Dashboard image from Docker Hub
+  community.docker.docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+    force_source: yes
+
+# Step 2: Stop existing container if running
+- name: Stop existing sales-dashboard container (if any)
+  community.docker.docker_container:
+    name: "{{ container_name }}"
+    state: stopped
+  ignore_errors: yes
+
+# Step 3: Remove existing container
+- name: Remove existing sales-dashboard container (if any)
+  community.docker.docker_container:
+    name: "{{ container_name }}"
+    state: absent
+  ignore_errors: yes
+
+# Step 4: Run the Sales Dashboard container
+- name: Deploy Sales Dashboard container
+  community.docker.docker_container:
+    name: "{{ container_name }}"
+    image: "{{ docker_image }}"
+    state: started
+    restart_policy: always      # Auto-restart if server reboots
+    ports:
+      - "{{ host_port }}:{{ app_port }}"  # Map host:80 to container:5000
+
+# Step 5: Verify container is running
+- name: Verify container is running
+  command: docker ps --filter "name={{ container_name }}" --format "table {% raw %}{{.Names}}\t{{.Status}}\t{{.Ports}}{% endraw %}"
+  register: container_status
+  changed_when: false
+
+# Step 6: Print container status
+- name: Print container status
+  debug:
+    msg: "{{ container_status.stdout }}"
+
+# Step 7: Health check - verify app is responding
+- name: Wait for application to be ready
+  wait_for:
+    host: localhost
+    port: "{{ host_port }}"
+    timeout: 60
+    msg: "Sales Dashboard did not start within 60 seconds"
+
+- name: Application deployed successfully
+  debug:
+    msg: "Sales Dashboard is live at http://{{ ansible_host }}"

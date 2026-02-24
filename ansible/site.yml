@@ -1,0 +1,19 @@
+# ============================================================
+# site.yml - Master Playbook
+# Orchestrates all roles for full server configuration
+# Run with: ansible-playbook -i inventory.ini site.yml
+# ============================================================
+
+---
+- name: Configure Sales Dashboard Server
+  hosts: sales_dashboard_servers
+  become: true  # Run as sudo/root
+  vars:
+    docker_image: "fredipolodev/sales-dashboard:latest"
+    app_port: 5000
+    host_port: 80
+    container_name: "sales-dashboard"
+
+  roles:
+    - docker
+    - app
