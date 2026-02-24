@@ -1,0 +1,44 @@
+name: Simple CI/CD - Manual Deploy
+
+# This is a simpler version that builds the Docker image
+# and notifies you when it's ready for manual deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/sales-dashboard:latest
+      
+      - name: Success notification
+        run: |
+          echo "✅ Docker image built and pushed successfully!"
+          echo "📦 Image: ${{ secrets.DOCKER_USERNAME }}/sales-dashboard:latest"
+          echo ""
+          echo "To deploy manually, SSH to your EC2 and run:"
+          echo "docker pull ${{ secrets.DOCKER_USERNAME }}/sales-dashboard:latest"
+          echo "docker stop sales-dashboard || true"
+          echo "docker run -d --name sales-dashboard -p 80:5000 ${{ secrets.DOCKER_USERNAME }}/sales-dashboard:latest"
